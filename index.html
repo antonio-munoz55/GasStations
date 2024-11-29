@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="./src/css/style.css">
+    <script type="module" src="./src/js/script.js" defer></script>
+    <title>Gas Stations</title>
+</head>
+<body>
+    <div id="app-container">
+        <h1>GAS STATIONS</h1>
+        
+        <select id="province-select">
+            <option value="" disabled selected>Select a province</option>
+        </select>
+        <select id="municipality-select" disabled>
+            <option value="" disabled selected>Select a municipality</option>
+        </select>
+        <select id="fuel-type-select" disabled>
+            <option value="" disabled selected>Select a fuel type</option>
+        </select>
+        <label for="open-now">
+            <input type="checkbox" id="open-now"> Show only open gas stations
+        </label>
+        <div id="results">Please select a province, municipality, and fuel type to see the results.</div>
+    </div>
+</body>
+</html>
