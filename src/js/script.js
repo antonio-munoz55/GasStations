@@ -166,21 +166,21 @@ function displayResults(stations) {
     const showOpenOnly = openNowCheckbox.checked;
 
     // Filter stations if the "Open Now" option is selected
-    const filteredStations = showOpenOnly ? stations.filter(station => isStationOpen(station.Horario)) : stations;
+    const filteredStations = showOpenOnly ? stations.filter(station => isStationInService(station.Horario)) : stations;
 
     // Loop through each filtered gas station and display its details
     filteredStations.forEach(station => {
         const stationDiv = document.createElement("div");
         stationDiv.className = "station";
 
-            stationDiv.innerHTML = `
-                <p><strong>Address:</strong> ${station.Dirección}</p>
-                <p><strong>Locality:</strong> ${station.Localidad}</p>
-                <p><strong>Province:</strong> ${station.Provincia}</p>
-                <p><strong>Schedule:</strong> ${station.Horario}</p>
-                <p><strong>Price:</strong> ${station.PrecioProducto} €</p>
-            `;
-            resultsDiv.appendChild(stationDiv); // Append the station info to the results
+        stationDiv.innerHTML = `
+            <p><strong>Address:</strong> ${station.Dirección}</p>
+            <p><strong>Locality:</strong> ${station.Localidad}</p>
+            <p><strong>Province:</strong> ${station.Provincia}</p>
+            <p><strong>Schedule:</strong> ${station.Horario}</p>
+            <p><strong>Price:</strong> ${station.PrecioProducto} €</p>
+        `;
+        resultsDiv.appendChild(stationDiv); // Append the station info to the results
     });
 
     // If no stations to display, show a message
@@ -189,27 +189,36 @@ function displayResults(stations) {
     }
 }
 
-// Function to check if a station is open based on its schedule
-function isStationOpen(schedule) {
-    if (schedule === "L-D: 24H") return true; // If the station is open 24 hours, return true
-    const now = new Date(); // Get current date and time
-    const currentHour = now.getHours(); // Get current hour
-    const currentDay = now.getDay(); // Get current day (0-6, where 0 = Sunday)
+// Function to check if a station is open now
+function isStationInService(schedule) {
+    const now = new Date();
+    const currentDay = now.getDay(); // Current day of the week (0 for Sunday, 1 for Monday, etc.)
+    const currentTime = now.getHours() * 60 + now.getMinutes(); // Current time in minutes since midnight
 
-    const days = schedule.split(":")[0].trim(); // Extract days of the week the station is open
-    const hours = schedule.split(":")[1].trim(); // Extract opening hours
-    const [startHour, endHour] = hours.split("-").map(time => parseInt(time.split(":")[0])); // Parse start and end hours
+    // If the station is open 24 hours a day, return true
+    if (schedule.includes("L-D: 24H")) return true;
 
-    // Check if the station is open based on the current time and schedule
-    if (days === "L-D") {
-        return currentHour >= startHour && currentHour < endHour;
-    } else if (days.includes("L-V") && currentDay >= 1 && currentDay <= 5) {
-        return currentHour >= startHour && currentHour < endHour;
-    } else if (days.includes("S") && currentDay === 6) {
-        return currentHour >= startHour && currentHour < endHour;
-    } else if (days.includes("D") && currentDay === 0) {
-        return currentHour >= startHour && currentHour < endHour;
+    // Map days of the week to numbers for comparison
+    const daysMap = { L: 1, M: 2, X: 3, J: 4, V: 5, S: 6, D: 0 };
+    const hours = schedule.split(";");
+
+    // Check each schedule segment
+    for (const hour of hours) {
+        const [days, timeRange] = hour.split(": ");
+        const [startDay, endDay] = days.split("-").map(d => daysMap[d.trim()]); // Map days to numbers
+        const [start, end] = timeRange
+            .split("-")
+            .map(t => t.split(":").reduce((h, m) => h * 60 + Number(m))); // Convert hours to minutes
+
+        // Check if the current day and time match the schedule
+        if (
+            ((currentDay >= startDay && currentDay <= endDay) || // Within the day range
+                (endDay < startDay && (currentDay >= startDay || currentDay <= endDay))) && // Across week boundary
+            ((currentTime >= start && currentTime <= end) || // Within the time range
+                (end < start && (currentTime >= start || currentTime <= end))) // Overnight schedule
+        ) {
+            return true;
+        }
     }
-
-    return false; // If none of the conditions are met, the station is closed
+    return false; // If no matching schedule is found, return false
 }
